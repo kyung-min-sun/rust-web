@@ -23,29 +23,12 @@ pub fn split_request(stream: &TcpStream) -> Option<(Vec<String>, String)> {
     let mut char_sequence: Vec<u8> = Vec::new();
     let mut body_sequence: Vec<u8> = Vec::new();
     let mut content_length: usize = 0;
+    let mut bytes = buf_reader.bytes().into_iter();
 
-    for byte in buf_reader.bytes() {
-        match content_length {
-            0 => (),
-            1.. => match byte {
-                Ok(char) if body_sequence.len() == 0 && char.is_ascii_whitespace() => {
-                    continue;
-                }
-                Ok(char) => {
-                    body_sequence.push(char);
-                    if body_sequence.len() == content_length {
-                        break;
-                    } else {
-                        continue;
-                    }
-                }
-                Err(_) => continue,
-            },
-        }
-
+    while let Some(byte) = bytes.next() {
         let last_request_line = request_lines
             .last()
-            .unwrap_or(&String::from(""))
+            .unwrap_or(&String::from("--"))
             .trim()
             .to_lowercase();
 
@@ -64,22 +47,37 @@ pub fn split_request(stream: &TcpStream) -> Option<(Vec<String>, String)> {
         }
 
         match byte {
-            Ok(char) if char as char == '\n' => {
-                match String::from_utf8(char_sequence.clone()) {
-                    Ok(value) => request_lines.push(value),
-                    Err(_) => return None,
+            Ok(char) if char as char == '\n' => match String::from_utf8(char_sequence.clone()) {
+                Ok(value) if value.trim().is_empty() => break,
+                Ok(value) => {
+                    dbg!("{:#?}", &value);
+                    request_lines.push(value);
+                    char_sequence.clear()
                 }
-                match last_request_line {
-                    line if line.is_empty() => break,
-                    _ => char_sequence.clear(),
-                }
-            }
+                Err(_) => return None,
+            },
             Ok(char) => char_sequence.push(char),
             Err(_) => return None,
         };
     }
 
-    println!("{:#?}", request_lines);
+    for byte in bytes {
+        match content_length {
+            0 => (),
+            1.. => match byte {
+                Ok(char) => {
+                    body_sequence.push(char);
+                    if body_sequence.len() == content_length {
+                        break;
+                    } else {
+                        continue;
+                    }
+                }
+                Err(_) => continue,
+            },
+        }
+    }
+
     let body_str = match String::from_utf8(body_sequence) {
         Ok(v) => v,
         Err(_) => String::from(""),

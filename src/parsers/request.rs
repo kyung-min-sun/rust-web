@@ -69,13 +69,17 @@ pub fn split_request(stream: &TcpStream) -> Option<(Vec<String>, String)> {
                     Ok(value) => request_lines.push(value),
                     Err(_) => return None,
                 }
-                char_sequence.clear();
+                match last_request_line {
+                    line if line.is_empty() => break,
+                    _ => char_sequence.clear(),
+                }
             }
             Ok(char) => char_sequence.push(char),
             Err(_) => return None,
         };
     }
 
+    println!("{:#?}", request_lines);
     let body_str = match String::from_utf8(body_sequence) {
         Ok(v) => v,
         Err(_) => String::from(""),

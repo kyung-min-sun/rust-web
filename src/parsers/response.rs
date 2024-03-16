@@ -23,7 +23,7 @@ impl HttpCode {
 impl ToString for HttpCode {
     fn to_string(&self) -> String {
         match &self {
-            Self::Ok => "Ok".to_string(),
+            Self::Ok => "OK".to_string(),
             Self::BadRequest => "BAD REQUEST".to_string(),
             Self::NotFound => "NOT FOUND".to_string(),
             _ => "".to_string(),

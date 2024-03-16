@@ -61,20 +61,22 @@ pub fn split_request(stream: &TcpStream) -> Option<(Vec<String>, String)> {
         };
     }
 
-    for byte in bytes {
-        match content_length {
-            0 => (),
-            1.. => match byte {
-                Ok(char) => {
-                    body_sequence.push(char);
-                    if body_sequence.len() == content_length {
-                        break;
-                    } else {
-                        continue;
+    if content_length > 0 {
+        for byte in bytes {
+            match content_length {
+                0 => (),
+                1.. => match byte {
+                    Ok(char) => {
+                        body_sequence.push(char);
+                        if body_sequence.len() == content_length {
+                            break;
+                        } else {
+                            continue;
+                        }
                     }
-                }
-                Err(_) => continue,
-            },
+                    Err(_) => continue,
+                },
+            }
         }
     }
 

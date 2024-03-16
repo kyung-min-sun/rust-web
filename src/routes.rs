@@ -35,10 +35,10 @@ pub fn handle_request(request: HttpRequest, stream: TcpStream) {
         ),
         _ => response::send_response(
             stream,
-            response::http_error(
-                response::HttpCode::NotFound,
-                &fs::read_to_string("./src/404.html").unwrap(),
-            ),
+            HttpResponse {
+                code: HttpCode::NotFound,
+                body: Box::new(fs::read_to_string("./src/404.html").unwrap()),
+            },
         ),
     }
 }
